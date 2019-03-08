@@ -10,9 +10,9 @@ import (
 	"testing"
 
 	"github.com/hashicorp/vault/api"
-	"github.com/postfinance/vault/kv"
 	"github.com/ory/dockertest"
 	"github.com/pkg/errors"
+	"github.com/postfinance/vault/kv"
 	"github.com/stretchr/testify/assert"
 )
 
