@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/postfinance/vault/kv"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -88,7 +89,6 @@ func TestMain(m *testing.M) {
 
 	code := m.Run()
 
-	os.Exit(code)
 	// You can't defer this because os.Exit doesn't care for defer
 	if err := pool.Purge(resource); err != nil {
 		log.Fatalf("could not purge resource: %s", err)
@@ -97,11 +97,20 @@ func TestMain(m *testing.M) {
 }
 
 func TestVaultKV(t *testing.T) {
-	t.Log("vault")
-	clnt, err := kv.New(vaultClient, "secret/")
-	if err != nil {
-		t.Fatal(err)
-	}
+	var clnt *kv.Client
+
+	t.Run("new client with false path", func(t *testing.T) {
+		c, err := kv.New(vaultClient, "secret")
+		assert.Nil(t, c)
+		assert.Error(t, err)
+	})
+
+	t.Run("new client", func(t *testing.T) {
+		c, err := kv.New(vaultClient, "secret/")
+		require.NotNil(t, c)
+		require.NoError(t, err)
+		clnt = c
+	})
 
 	t.Run("write secrets", func(t *testing.T) {
 		for name, data := range secrets {
