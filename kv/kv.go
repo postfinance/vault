@@ -25,7 +25,11 @@ type Client struct {
 // New creates a new kv.Client with the Vault client c and a path p long enough to determine the mount path of the engine
 // p = secret/ -> K/V engine mount path secret/
 // p = secret  -> error
+// p = /secret -> error
 func New(c *api.Client, p string) (*Client, error) {
+	if strings.HasPrefix(p, "/") {
+		return nil, fmt.Errorf("path %s must not start with '/'", p)
+	}
 	if !strings.ContainsRune(p, '/') {
 		return nil, fmt.Errorf("path %s must contain at least one '/'", p)
 	}
