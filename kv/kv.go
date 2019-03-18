@@ -1,3 +1,4 @@
+// Package kv provides version agnostic methods for read, write and list of secrets from @hashicorp Vault's KV secret engines
 package kv
 
 import (

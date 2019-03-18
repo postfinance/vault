@@ -273,6 +273,7 @@ func TestToken(t *testing.T) {
 		secret, err := v.client.Auth().Token().CreateOrphan(&api.TokenCreateRequest{
 			TTL: "3600s",
 		})
+		assert.NoError(t, err)
 		// store the new token
 		require.NoError(t, v.StoreToken(secret.Auth.ClientToken))
 		// the actual test
@@ -423,6 +424,7 @@ func TestRenew(t *testing.T) {
 		secret, err := v.client.Auth().Token().CreateOrphan(&api.TokenCreateRequest{
 			TTL: "3600s",
 		})
+		assert.NoError(t, err)
 		r, err := v.NewRenewer(secret.Auth.ClientToken)
 		assert.NoError(t, err)
 		assert.NotNil(t, r)
