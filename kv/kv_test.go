@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	token      = "90b03685-e17b-7e5e-13a0-e14e45baeb2f"
+	rootToken  = "90b03685-e17b-7e5e-13a0-e14e45baeb2f"
 	secretpath = "secret/test"
 )
 
@@ -41,7 +41,6 @@ func TestMain(m *testing.M) {
 	//os.Unsetenv("http_proxy")
 	//os.Unsetenv("https_proxy")
 
-	// uses a sensible default on windows (tcp/http) and linux/osx (socket)
 	pool, err := dockertest.NewPool("unix:///var/run/docker.sock")
 	if err != nil {
 		log.Fatalf("Could not connect to docker: %s", err)
@@ -49,7 +48,7 @@ func TestMain(m *testing.M) {
 
 	// pulls an image, creates a container based on it and runs it
 	resource, err := pool.Run("vault", "latest", []string{
-		"VAULT_DEV_ROOT_TOKEN_ID=" + token,
+		"VAULT_DEV_ROOT_TOKEN_ID=" + rootToken,
 		"VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200",
 	})
 	if err != nil {
@@ -66,7 +65,7 @@ func TestMain(m *testing.M) {
 	vaultAddr := fmt.Sprintf("http://%s:%s", host, resource.GetPort("8200/tcp"))
 
 	os.Setenv("VAULT_ADDR", vaultAddr)
-	os.Setenv("VAULT_TOKEN", token)
+	os.Setenv("VAULT_TOKEN", rootToken)
 
 	fmt.Println("VAULT_ADDR:", vaultAddr)
 
@@ -103,6 +102,21 @@ func TestVaultKV(t *testing.T) {
 		c, err := kv.New(vaultClient, "secret")
 		assert.Nil(t, c)
 		assert.Error(t, err)
+		assert.Equal(t, err.Error(), "path secret must contain at least one '/'")
+	})
+
+	t.Run("new client with false path", func(t *testing.T) {
+		c, err := kv.New(vaultClient, "cubbyhole/")
+		assert.Nil(t, c)
+		assert.Error(t, err)
+		assert.Equal(t, err.Error(), "matching mount cubbyhole/ for path cubbyhole/ is not of type kv")
+	})
+
+	t.Run("new client with false path", func(t *testing.T) {
+		c, err := kv.New(vaultClient, "notexist/")
+		assert.Nil(t, c)
+		assert.Error(t, err)
+		assert.Equal(t, err.Error(), "failed to get mount for path: notexist/")
 	})
 
 	t.Run("new client", func(t *testing.T) {
