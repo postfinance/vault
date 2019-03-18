@@ -20,11 +20,6 @@ const (
 	rootToken = "90b03685-e17b-7e5e-13a0-e14e45baeb2f"
 )
 
-var (
-	host        string
-	vaultClient *api.Client
-)
-
 func TestMain(m *testing.M) {
 	flag.Parse()
 	//os.Unsetenv("http_proxy")
@@ -44,7 +39,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not start resource: %s", err)
 	}
 
-	host = os.Getenv("DOCKER_HOST")
+	host := os.Getenv("DOCKER_HOST")
 	if host == "" {
 		host = "localhost"
 	}
@@ -62,7 +57,7 @@ func TestMain(m *testing.M) {
 	if err := vaultConfig.ReadEnvironment(); err != nil {
 		log.Fatal(err)
 	}
-	vaultClient, err = api.NewClient(vaultConfig)
+	vaultClient, err := api.NewClient(vaultConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -270,7 +265,7 @@ func TestToken(t *testing.T) {
 		assert.NoError(t, err)
 		// create a new token
 		v.UseToken(rootToken)
-		secret, err := v.client.Auth().Token().CreateOrphan(&api.TokenCreateRequest{
+		secret, err := v.Client().Auth().Token().CreateOrphan(&api.TokenCreateRequest{
 			TTL: "3600s",
 		})
 		assert.NoError(t, err)
@@ -421,7 +416,7 @@ func TestRenew(t *testing.T) {
 		assert.NoError(t, err)
 		// create a new token
 		v.UseToken(rootToken)
-		secret, err := v.client.Auth().Token().CreateOrphan(&api.TokenCreateRequest{
+		secret, err := v.Client().Auth().Token().CreateOrphan(&api.TokenCreateRequest{
 			TTL: "3600s",
 		})
 		assert.NoError(t, err)

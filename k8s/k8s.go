@@ -99,6 +99,11 @@ func NewFromEnvironment() (*Vault, error) {
 	return v, nil
 }
 
+// Client returns a Vault *api.Client
+func (v *Vault) Client() *api.Client {
+	return v.client
+}
+
 // Authenticate with vault
 func (v *Vault) Authenticate() (string, error) {
 	var empty string
