@@ -37,6 +37,11 @@ func New(c *api.Client, p string) (*Client, error) {
 	return &Client{client: c, Version: version}, nil
 }
 
+// Client returns a Vault *api.Client
+func (c *Client) Client() *api.Client {
+	return c.client
+}
+
 // Read a secret from a K/V version 1 or 2
 func (c *Client) Read(p string) (map[string]interface{}, error) {
 	origPath := p
