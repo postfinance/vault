@@ -140,10 +140,10 @@ func TestVaultKV(t *testing.T) {
 		}
 	})
 
-	t.Run("read path", func(t *testing.T) {
+	t.Run("read path not found", func(t *testing.T) {
 		s, err := clnt.Read(secretpath)
 		assert.Nil(t, s)
-		assert.Error(t, err)
+		assert.Nil(t, err)
 	})
 
 	t.Run("list path", func(t *testing.T) {
@@ -155,11 +155,11 @@ func TestVaultKV(t *testing.T) {
 		}
 	})
 
-	t.Run("list secret", func(t *testing.T) {
+	t.Run("list secret not found", func(t *testing.T) {
 		for name := range secrets {
 			keys, err := clnt.List(name)
 			assert.Nil(t, keys)
-			assert.Error(t, err)
+			assert.Nil(t, err)
 			break
 		}
 	})

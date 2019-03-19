@@ -44,7 +44,6 @@ func (c *Client) Client() *api.Client {
 
 // Read a secret from a K/V version 1 or 2
 func (c *Client) Read(p string) (map[string]interface{}, error) {
-	origPath := p
 	if c.Version == 2 {
 		p = fixPath(p, ReadPrefix)
 	}
@@ -52,8 +51,8 @@ func (c *Client) Read(p string) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	if s == nil {
-		return nil, fmt.Errorf("failed to read path %s", origPath)
+	if s == nil || s.Data == nil {
+		return nil, nil
 	}
 	if c.Version == 2 {
 		return s.Data["data"].(map[string]interface{}), nil
@@ -75,7 +74,6 @@ func (c *Client) Write(p string, data map[string]interface{}) error {
 
 // List secrets from a K/V version 1 or 2
 func (c *Client) List(p string) ([]string, error) {
-	origPath := p
 	if c.Version == 2 {
 		p = fixPath(p, ListPrefix)
 	}
@@ -83,8 +81,8 @@ func (c *Client) List(p string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if s == nil {
-		return nil, fmt.Errorf("failed to list path %s", origPath)
+	if s == nil || s.Data == nil {
+		return nil, nil
 	}
 	keys := []string{}
 	for _, v := range s.Data["keys"].([]interface{}) {
