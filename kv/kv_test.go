@@ -98,6 +98,16 @@ func TestMain(m *testing.M) {
 func TestVaultKV(t *testing.T) {
 	var clnt *kv.Client
 
+	t.Run("test FixPath with v1 style path", func(t *testing.T) {
+		p := "secret/foo"
+		assert.Equal(t, "secret/data/foo", kv.FixPath(p, kv.ReadPrefix))
+	})
+
+	t.Run("test FixPath with v2 style path", func(t *testing.T) {
+		p := "secret/data/foo"
+		assert.Equal(t, p, kv.FixPath(p, kv.ReadPrefix))
+	})
+
 	t.Run("new client with false path", func(t *testing.T) {
 		c, err := kv.New(vaultClient, "secret")
 		assert.Nil(t, c)

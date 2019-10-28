@@ -45,7 +45,7 @@ func (c *Client) Client() *api.Client {
 // Read a secret from a K/V version 1 or 2
 func (c *Client) Read(p string) (map[string]interface{}, error) {
 	if c.Version == 2 {
-		p = fixPath(p, ReadPrefix)
+		p = FixPath(p, ReadPrefix)
 	}
 	s, err := c.client.Logical().Read(p)
 	if err != nil {
@@ -63,7 +63,7 @@ func (c *Client) Read(p string) (map[string]interface{}, error) {
 // Write a secret to a K/V version 1 or 2
 func (c *Client) Write(p string, data map[string]interface{}) error {
 	if c.Version == 2 {
-		p = fixPath(p, WritePrefix)
+		p = FixPath(p, WritePrefix)
 		data = map[string]interface{}{
 			"data": data,
 		}
@@ -75,7 +75,7 @@ func (c *Client) Write(p string, data map[string]interface{}) error {
 // List secrets from a K/V version 1 or 2
 func (c *Client) List(p string) ([]string, error) {
 	if c.Version == 2 {
-		p = fixPath(p, ListPrefix)
+		p = FixPath(p, ListPrefix)
 	}
 	s, err := c.client.Logical().List(p)
 	if err != nil {
@@ -91,9 +91,15 @@ func (c *Client) List(p string) ([]string, error) {
 	return keys, nil
 }
 
-// fixPath inserts the API prefix for the appropriate version if necessary
-func fixPath(p, prefix string) string {
+// FixPath inserts the API prefix for v1 style path
+// secret/foo      -> secret/data/foo
+// secret/data/foo -> secret/data/foo
+// presumes a valid path
+func FixPath(p, prefix string) string {
 	pp := strings.Split(p, "/")
+	if pp[1] == prefix {
+		return p // already v2 style path
+	}
 	return path.Join(append(pp[:1], append([]string{prefix}, pp[1:]...)...)...)
 }
 
