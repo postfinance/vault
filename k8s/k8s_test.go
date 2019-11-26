@@ -79,6 +79,23 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+func TestFixAuthMountPath(t *testing.T) {
+	testData := [][2]string{
+		[2]string{"kubernetes", "auth/kubernetes"},
+		[2]string{"/kubernetes", "auth/kubernetes"},
+		[2]string{"/kubernetes/", "auth/kubernetes"},
+		[2]string{"kubernetes/", "auth/kubernetes"},
+		[2]string{"kubernetes/something", "auth/kubernetes/something"},
+		[2]string{"auth/kubernetes", "auth/kubernetes"},
+		[2]string{"/auth/kubernetes", "auth/kubernetes"},
+	}
+
+	for _, td := range testData {
+		t.Log(td[0])
+		assert.Equal(t, td[1], FixAuthMountPath(td[0]))
+	}
+}
+
 func TestNewVaultFromEnvironment(t *testing.T) {
 	vaultTokenPath, err := ioutil.TempFile("", "vault-token")
 	if err != nil {
@@ -86,13 +103,13 @@ func TestNewVaultFromEnvironment(t *testing.T) {
 	}
 	defer os.Remove(vaultTokenPath.Name())
 
-	t.Run("without minimal attribute", func(t *testing.T) {
+	t.Run("without minimal attributes", func(t *testing.T) {
 		v, err := NewFromEnvironment()
 		assert.Nil(t, v)
 		assert.Error(t, err)
 	})
 
-	t.Run("with minimal attribute", func(t *testing.T) {
+	t.Run("with minimal attributes", func(t *testing.T) {
 		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
@@ -101,7 +118,7 @@ func TestNewVaultFromEnvironment(t *testing.T) {
 		assert.Equal(t, vaultTokenPath.Name(), v.TokenPath)
 		assert.Equal(t, false, v.ReAuth)
 		assert.Equal(t, 0, v.TTL)
-		assert.Equal(t, fmt.Sprintf("auth/%s", AuthMountPath), v.AuthMountPath)
+		assert.Equal(t, AuthMountPath, v.AuthMountPath)
 		assert.Equal(t, ServiceAccountTokenPath, v.ServiceAccountTokenPath)
 		assert.Equal(t, false, v.AllowFail)
 	})
