@@ -129,6 +129,12 @@ func TestVaultKV(t *testing.T) {
 		assert.Equal(t, err.Error(), "failed to get mount for path: notexist/")
 	})
 
+	t.Run("new client with path that starts with '/'", func(t *testing.T) {
+		c, err := kv.New(vaultClient, "/secret")
+		assert.Nil(t, c)
+		assert.Error(t, err)
+	})
+
 	t.Run("new client", func(t *testing.T) {
 		c, err := kv.New(vaultClient, "secret/")
 		require.NotNil(t, c)
