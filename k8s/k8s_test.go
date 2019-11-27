@@ -81,13 +81,13 @@ func TestMain(m *testing.M) {
 
 func TestFixAuthMountPath(t *testing.T) {
 	testData := [][2]string{
-		[2]string{"kubernetes", "auth/kubernetes"},
-		[2]string{"/kubernetes", "auth/kubernetes"},
-		[2]string{"/kubernetes/", "auth/kubernetes"},
-		[2]string{"kubernetes/", "auth/kubernetes"},
-		[2]string{"kubernetes/something", "auth/kubernetes/something"},
-		[2]string{"auth/kubernetes", "auth/kubernetes"},
-		[2]string{"/auth/kubernetes", "auth/kubernetes"},
+		{"kubernetes", "auth/kubernetes"},
+		{"/kubernetes", "auth/kubernetes"},
+		{"/kubernetes/", "auth/kubernetes"},
+		{"kubernetes/", "auth/kubernetes"},
+		{"kubernetes/something", "auth/kubernetes/something"},
+		{"auth/kubernetes", "auth/kubernetes"},
+		{"/auth/kubernetes", "auth/kubernetes"},
 	}
 
 	for _, td := range testData {
