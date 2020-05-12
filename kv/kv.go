@@ -95,6 +95,12 @@ func (c *Client) List(p string) ([]string, error) {
 	return keys, nil
 }
 
+// SetToken sets the token directly. This won't perform any auth
+// verification, it simply sets the token properly for future requests.
+func (c *Client) SetToken(v string) {
+	c.client.SetToken(v)
+}
+
 // FixPath inserts the API prefix for v1 style path
 // secret/foo      -> secret/data/foo
 // secret/data/foo -> secret/data/foo
