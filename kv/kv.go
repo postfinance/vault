@@ -3,7 +3,6 @@ package kv
 
 import (
 	"fmt"
-	"path"
 	"strconv"
 	"strings"
 
@@ -21,6 +20,7 @@ const (
 type Client struct {
 	client  *api.Client
 	Version int
+	Mount   string
 }
 
 // New creates a new kv.Client with the Vault client c and a path p long enough to determine the mount path of the engine
@@ -34,11 +34,11 @@ func New(c *api.Client, p string) (*Client, error) {
 	if !strings.ContainsRune(p, '/') {
 		return nil, fmt.Errorf("path %s must contain at least one '/'", p)
 	}
-	version, err := getVersion(c, p)
+	version, mount, err := getVersionAndMount(c, p)
 	if err != nil {
 		return nil, err
 	}
-	return &Client{client: c, Version: version}, nil
+	return &Client{client: c, Version: version, Mount: mount}, nil
 }
 
 // Client returns a Vault *api.Client
@@ -49,7 +49,7 @@ func (c *Client) Client() *api.Client {
 // Read a secret from a K/V version 1 or 2
 func (c *Client) Read(p string) (map[string]interface{}, error) {
 	if c.Version == 2 {
-		p = FixPath(p, ReadPrefix)
+		p = FixPath(p, c.Mount, ReadPrefix)
 	}
 	s, err := c.client.Logical().Read(p)
 	if err != nil {
@@ -67,7 +67,7 @@ func (c *Client) Read(p string) (map[string]interface{}, error) {
 // Write a secret to a K/V version 1 or 2
 func (c *Client) Write(p string, data map[string]interface{}) error {
 	if c.Version == 2 {
-		p = FixPath(p, WritePrefix)
+		p = FixPath(p, c.Mount, WritePrefix)
 		data = map[string]interface{}{
 			"data": data,
 		}
@@ -79,7 +79,7 @@ func (c *Client) Write(p string, data map[string]interface{}) error {
 // List secrets from a K/V version 1 or 2
 func (c *Client) List(p string) ([]string, error) {
 	if c.Version == 2 {
-		p = FixPath(p, ListPrefix)
+		p = FixPath(p, c.Mount, ListPrefix)
 	}
 	s, err := c.client.Logical().List(p)
 	if err != nil {
@@ -105,19 +105,23 @@ func (c *Client) SetToken(v string) {
 // secret/foo      -> secret/data/foo
 // secret/data/foo -> secret/data/foo
 // presumes a valid path
-func FixPath(p, prefix string) string {
-	pp := strings.Split(p, "/")
-	if pp[1] == prefix {
-		return p // already v2 style path
+func FixPath(path, mount, prefix string) string {
+	if !strings.HasSuffix(mount, "/") {
+		mount = mount + "/"
 	}
-	return path.Join(append(pp[:1], append([]string{prefix}, pp[1:]...)...)...)
+	secretPath := strings.TrimPrefix(path, mount)
+	pp := strings.Split(secretPath, "/")
+	if pp[0] == prefix {
+		return path // already v2 style path
+	}
+	return fmt.Sprintf("%s%s/%s", mount, prefix, secretPath)
 }
 
-// getVersion of the KV engine
-func getVersion(c *api.Client, p string) (int, error) {
+// getVersionAndMount of the KV engine
+func getVersionAndMount(c *api.Client, p string) (int, string, error) {
 	mounts, err := c.Sys().ListMounts()
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 	for k, m := range mounts {
 		if !strings.HasPrefix(p, k) {
@@ -125,12 +129,16 @@ func getVersion(c *api.Client, p string) (int, error) {
 		}
 		switch m.Type {
 		case "kv":
-			return strconv.Atoi(m.Options["version"])
+			version, err := strconv.Atoi(m.Options["version"])
+			if err != nil {
+				return 0, "", err
+			}
+			return version, k, nil
 		case "generic":
-			return 1, nil
+			return 1, k, nil
 		default:
-			return 0, fmt.Errorf("matching mount %s for path %s is not of type kv", k, p)
+			return 0, "", fmt.Errorf("matching mount %s for path %s is not of type kv", k, p)
 		}
 	}
-	return 0, fmt.Errorf("failed to get mount for path: %s", p)
+	return 0, "", fmt.Errorf("failed to get mount for path: %s", p)
 }

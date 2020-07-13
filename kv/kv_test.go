@@ -100,12 +100,19 @@ func TestVaultKV(t *testing.T) {
 
 	t.Run("test FixPath with v1 style path", func(t *testing.T) {
 		p := "secret/foo"
-		assert.Equal(t, "secret/data/foo", kv.FixPath(p, kv.ReadPrefix))
+		assert.Equal(t, "secret/data/foo", kv.FixPath(p, "secret/", kv.ReadPrefix))
 	})
 
 	t.Run("test FixPath with v2 style path", func(t *testing.T) {
 		p := "secret/data/foo"
-		assert.Equal(t, p, kv.FixPath(p, kv.ReadPrefix))
+		assert.Equal(t, p, kv.FixPath(p, "secret", kv.ReadPrefix))
+	})
+
+	t.Run("test FixPath with nested secret engine", func(t *testing.T) {
+		p := "secret/foo/kv/bar"
+		mount := "secret/foo/kv/"
+		expected := "secret/foo/kv/data/bar"
+		assert.Equal(t, expected, kv.FixPath(p, mount, kv.ReadPrefix))
 	})
 
 	t.Run("new client with false path", func(t *testing.T) {
