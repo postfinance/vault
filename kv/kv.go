@@ -31,13 +31,16 @@ func New(c *api.Client, p string) (*Client, error) {
 	if strings.HasPrefix(p, "/") {
 		return nil, fmt.Errorf("path %s must not start with '/'", p)
 	}
+
 	if !strings.ContainsRune(p, '/') {
 		return nil, fmt.Errorf("path %s must contain at least one '/'", p)
 	}
+
 	version, mount, err := getVersionAndMount(c, p)
 	if err != nil {
 		return nil, err
 	}
+
 	return &Client{client: c, Version: version, Mount: mount}, nil
 }
 
@@ -51,16 +54,20 @@ func (c *Client) Read(p string) (map[string]interface{}, error) {
 	if c.Version == 2 {
 		p = FixPath(p, c.Mount, ReadPrefix)
 	}
+
 	s, err := c.client.Logical().Read(p)
 	if err != nil {
 		return nil, err
 	}
+
 	if s == nil || s.Data == nil {
 		return nil, nil
 	}
+
 	if c.Version == 2 {
 		return s.Data["data"].(map[string]interface{}), nil
 	}
+
 	return s.Data, nil
 }
 
@@ -72,7 +79,9 @@ func (c *Client) Write(p string, data map[string]interface{}) error {
 			"data": data,
 		}
 	}
+
 	_, err := c.client.Logical().Write(p, data)
+
 	return err
 }
 
@@ -81,17 +90,22 @@ func (c *Client) List(p string) ([]string, error) {
 	if c.Version == 2 {
 		p = FixPath(p, c.Mount, ListPrefix)
 	}
+
 	s, err := c.client.Logical().List(p)
 	if err != nil {
 		return nil, err
 	}
+
 	if s == nil || s.Data == nil {
 		return nil, nil
 	}
+
 	keys := []string{}
+
 	for _, v := range s.Data["keys"].([]interface{}) {
 		keys = append(keys, v.(string))
 	}
+
 	return keys, nil
 }
 
@@ -107,32 +121,38 @@ func (c *Client) SetToken(v string) {
 // presumes a valid path
 func FixPath(path, mount, prefix string) string {
 	if !strings.HasSuffix(mount, "/") {
-		mount = mount + "/"
+		mount += "/"
 	}
+
 	secretPath := strings.TrimPrefix(path, mount)
+
 	pp := strings.Split(secretPath, "/")
 	if pp[0] == prefix {
 		return path // already v2 style path
 	}
+
 	return fmt.Sprintf("%s%s/%s", mount, prefix, secretPath)
 }
 
 // getVersionAndMount of the KV engine
-func getVersionAndMount(c *api.Client, p string) (int, string, error) {
+func getVersionAndMount(c *api.Client, p string) (version int, mount string, err error) {
 	mounts, err := c.Sys().ListMounts()
 	if err != nil {
 		return 0, "", err
 	}
+
 	for k, m := range mounts {
 		if !strings.HasPrefix(p, k) {
 			continue
 		}
+
 		switch m.Type {
 		case "kv":
 			version, err := strconv.Atoi(m.Options["version"])
 			if err != nil {
 				return 0, "", err
 			}
+
 			return version, k, nil
 		case "generic":
 			return 1, k, nil
@@ -140,5 +160,6 @@ func getVersionAndMount(c *api.Client, p string) (int, string, error) {
 			return 0, "", fmt.Errorf("matching mount %s for path %s is not of type kv", k, p)
 		}
 	}
+
 	return 0, "", fmt.Errorf("failed to get mount for path: %s", p)
 }

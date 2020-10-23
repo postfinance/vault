@@ -18,10 +18,11 @@ import (
 )
 
 const (
-	rootToken  = "90b03685-e17b-7e5e-13a0-e14e45baeb2f"
+	rootToken  = "90b03685-e17b-7e5e-13a0-e14e45baeb2f" // nolint: gosec
 	secretpath = "secret/test"
 )
 
+// nolint: gochecknoglobals
 var (
 	host        string
 	vaultClient *api.Client
@@ -38,8 +39,6 @@ var (
 
 func TestMain(m *testing.M) {
 	flag.Parse()
-	//os.Unsetenv("http_proxy")
-	//os.Unsetenv("https_proxy")
 
 	pool, err := dockertest.NewPool("unix:///var/run/docker.sock")
 	if err != nil {
@@ -59,13 +58,15 @@ func TestMain(m *testing.M) {
 	if host == "" {
 		host = "localhost"
 	}
+
 	if host != "localhost" && !strings.Contains(host, ".") {
-		host = host + ".pnet.ch"
+		host += ".pnet.ch"
 	}
+
 	vaultAddr := fmt.Sprintf("http://%s:%s", host, resource.GetPort("8200/tcp"))
 
-	os.Setenv("VAULT_ADDR", vaultAddr)
-	os.Setenv("VAULT_TOKEN", rootToken)
+	_ = os.Setenv("VAULT_ADDR", vaultAddr)
+	_ = os.Setenv("VAULT_TOKEN", rootToken)
 
 	fmt.Println("VAULT_ADDR:", vaultAddr)
 
@@ -73,6 +74,7 @@ func TestMain(m *testing.M) {
 	if err := vaultConfig.ReadEnvironment(); err != nil {
 		log.Fatal(err)
 	}
+
 	vaultClient, err = api.NewClient(vaultConfig)
 	if err != nil {
 		log.Fatal(err)
@@ -92,9 +94,11 @@ func TestMain(m *testing.M) {
 	if err := pool.Purge(resource); err != nil {
 		log.Fatalf("could not purge resource: %s", err)
 	}
+
 	os.Exit(code)
 }
 
+// nolint: funlen
 func TestVaultKV(t *testing.T) {
 	var clnt *kv.Client
 
@@ -190,6 +194,7 @@ func TestVaultKV(t *testing.T) {
 	data := map[string]interface{}{
 		"Harley Quinn": "Dr. Harleen Frances Quinzel",
 	}
+
 	t.Run("write secret to path entry", func(t *testing.T) {
 		err := clnt.Write(secretpath, data)
 		assert.NoError(t, err)
