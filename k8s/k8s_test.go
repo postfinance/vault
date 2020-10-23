@@ -17,11 +17,13 @@ import (
 )
 
 const (
-	rootToken = "90b03685-e17b-7e5e-13a0-e14e45baeb2f" // nolint: gosec
+	rootToken = "90b03685-e17b-7e5e-13a0-e14e45baeb2f"
 )
 
 func TestMain(m *testing.M) {
 	flag.Parse()
+	//os.Unsetenv("http_proxy")
+	//os.Unsetenv("https_proxy")
 
 	pool, err := dockertest.NewPool("unix:///var/run/docker.sock")
 	if err != nil {
@@ -41,15 +43,13 @@ func TestMain(m *testing.M) {
 	if host == "" {
 		host = "localhost"
 	}
-
 	if host != "localhost" && !strings.Contains(host, ".") {
-		host += ".pnet.ch"
+		host = host + ".pnet.ch"
 	}
-
 	vaultAddr := fmt.Sprintf("http://%s:%s", host, resource.GetPort("8200/tcp"))
 
-	_ = os.Setenv("VAULT_ADDR", vaultAddr)
-	_ = os.Setenv("VAULT_TOKEN", rootToken)
+	os.Setenv("VAULT_ADDR", vaultAddr)
+	os.Setenv("VAULT_TOKEN", rootToken)
 
 	fmt.Println("VAULT_ADDR:", vaultAddr)
 
@@ -57,7 +57,6 @@ func TestMain(m *testing.M) {
 	if err := vaultConfig.ReadEnvironment(); err != nil {
 		log.Fatal(err)
 	}
-
 	vaultClient, err := api.NewClient(vaultConfig)
 	if err != nil {
 		log.Fatal(err)
@@ -77,7 +76,6 @@ func TestMain(m *testing.M) {
 	if err := pool.Purge(resource); err != nil {
 		log.Fatalf("could not purge resource: %s", err)
 	}
-
 	os.Exit(code)
 }
 
@@ -103,7 +101,6 @@ func TestNewVaultFromEnvironment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	defer os.Remove(vaultTokenPath.Name())
 
 	t.Run("without minimal attributes", func(t *testing.T) {
@@ -113,7 +110,7 @@ func TestNewVaultFromEnvironment(t *testing.T) {
 	})
 
 	t.Run("with minimal attributes", func(t *testing.T) {
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
 		assert.NoError(t, err)
@@ -127,8 +124,8 @@ func TestNewVaultFromEnvironment(t *testing.T) {
 	})
 
 	t.Run("invalid VAULT_TTL", func(t *testing.T) {
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_TTL", "1std")
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("VAULT_TTL", "1std")
 		defer os.Setenv("VAULT_TTL", "")
 		v, err := NewFromEnvironment()
 		assert.Nil(t, v)
@@ -136,8 +133,8 @@ func TestNewVaultFromEnvironment(t *testing.T) {
 	})
 
 	t.Run("valid VAULT_TTL", func(t *testing.T) {
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_TTL", "1h")
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("VAULT_TTL", "1h")
 		defer os.Setenv("VAULT_TTL", "")
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
@@ -146,8 +143,8 @@ func TestNewVaultFromEnvironment(t *testing.T) {
 	})
 
 	t.Run("invalid VAULT_REAUTH", func(t *testing.T) {
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_REAUTH", "no")
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("VAULT_REAUTH", "no")
 		defer os.Setenv("VAULT_REAUTH", "")
 		v, err := NewFromEnvironment()
 		assert.Nil(t, v)
@@ -155,8 +152,8 @@ func TestNewVaultFromEnvironment(t *testing.T) {
 	})
 
 	t.Run("valid VAULT_REAUTH", func(t *testing.T) {
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_REAUTH", "true")
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("VAULT_REAUTH", "true")
 		defer os.Setenv("VAULT_REAUTH", "")
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
@@ -165,8 +162,8 @@ func TestNewVaultFromEnvironment(t *testing.T) {
 	})
 
 	t.Run("invalid ALLOW_FAIL", func(t *testing.T) {
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-		_ = os.Setenv("ALLOW_FAIL", "no")
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("ALLOW_FAIL", "no")
 		defer os.Setenv("ALLOW_FAIL", "")
 		v, err := NewFromEnvironment()
 		assert.Nil(t, v)
@@ -174,8 +171,8 @@ func TestNewVaultFromEnvironment(t *testing.T) {
 	})
 
 	t.Run("valid ALLOW_FAIL", func(t *testing.T) {
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-		_ = os.Setenv("ALLOW_FAIL", "true")
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("ALLOW_FAIL", "true")
 		defer os.Setenv("ALLOW_FAIL", "")
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
@@ -184,10 +181,10 @@ func TestNewVaultFromEnvironment(t *testing.T) {
 	})
 }
 
-// nolint: funlen
 func TestToken(t *testing.T) {
+
 	t.Run("failed to store token", func(t *testing.T) {
-		_ = os.Setenv("VAULT_TOKEN_PATH", "/not/existing/path")
+		os.Setenv("VAULT_TOKEN_PATH", "/not/existing/path")
 		v, err := NewFromEnvironment()
 		assert.NoError(t, err)
 		assert.NotNil(t, v)
@@ -195,7 +192,7 @@ func TestToken(t *testing.T) {
 	})
 
 	t.Run("failed to load token", func(t *testing.T) {
-		_ = os.Setenv("VAULT_TOKEN_PATH", "/not/existing/path")
+		os.Setenv("VAULT_TOKEN_PATH", "/not/existing/path")
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
 		assert.NoError(t, err)
@@ -210,7 +207,7 @@ func TestToken(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer os.Remove(vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
 		assert.NoError(t, err)
@@ -226,7 +223,7 @@ func TestToken(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer os.Remove(vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
 		assert.NoError(t, err)
@@ -242,8 +239,8 @@ func TestToken(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer os.Remove(vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_REAUTH", "false")
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("VAULT_REAUTH", "false")
 		defer os.Setenv("VAULT_REAUTH", "")
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
@@ -259,8 +256,8 @@ func TestToken(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer os.Remove(vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_REAUTH", "false")
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("VAULT_REAUTH", "false")
 		defer os.Setenv("VAULT_REAUTH", "")
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
@@ -277,8 +274,8 @@ func TestToken(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer os.Remove(vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_REAUTH", "false")
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("VAULT_REAUTH", "false")
 		defer os.Setenv("VAULT_REAUTH", "")
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
@@ -298,25 +295,21 @@ func TestToken(t *testing.T) {
 	})
 }
 
-// nolint: funlen
 func TestAuthenticate(t *testing.T) {
 	vaultTokenPath, err := ioutil.TempFile("", "vault-token")
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	defer os.Remove(vaultTokenPath.Name())
-
 	serviceAccountTokenPath, err := ioutil.TempFile("", "sa-token")
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	defer os.Remove(serviceAccountTokenPath.Name())
 
 	t.Run("failed to load service account token", func(t *testing.T) {
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-		_ = os.Setenv("SERVICE_ACCOUNT_TOKEN_PATH", "/not/existing/path")
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("SERVICE_ACCOUNT_TOKEN_PATH", "/not/existing/path")
 		defer os.Setenv("SERVICE_ACCOUNT_TOKEN_PATH", "")
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
@@ -327,8 +320,8 @@ func TestAuthenticate(t *testing.T) {
 	})
 
 	t.Run("failed authentication", func(t *testing.T) {
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-		_ = os.Setenv("SERVICE_ACCOUNT_TOKEN_PATH", serviceAccountTokenPath.Name())
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("SERVICE_ACCOUNT_TOKEN_PATH", serviceAccountTokenPath.Name())
 		defer os.Setenv("SERVICE_ACCOUNT_TOKEN_PATH", "")
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
@@ -339,8 +332,8 @@ func TestAuthenticate(t *testing.T) {
 	})
 
 	t.Run("successful authentication", func(t *testing.T) {
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-		_ = os.Setenv("SERVICE_ACCOUNT_TOKEN_PATH", serviceAccountTokenPath.Name())
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("SERVICE_ACCOUNT_TOKEN_PATH", serviceAccountTokenPath.Name())
 		defer os.Setenv("SERVICE_ACCOUNT_TOKEN_PATH", "")
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
@@ -356,8 +349,8 @@ func TestAuthenticate(t *testing.T) {
 	})
 
 	t.Run("failed authentication with warnings", func(t *testing.T) {
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-		_ = os.Setenv("SERVICE_ACCOUNT_TOKEN_PATH", serviceAccountTokenPath.Name())
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("SERVICE_ACCOUNT_TOKEN_PATH", serviceAccountTokenPath.Name())
 		defer os.Setenv("SERVICE_ACCOUNT_TOKEN_PATH", "")
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
@@ -378,8 +371,8 @@ func TestAuthenticate(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer os.Remove(vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_REAUTH", "true")
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("VAULT_REAUTH", "true")
 		defer os.Setenv("VAULT_REAUTH", "")
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
@@ -395,8 +388,8 @@ func TestAuthenticate(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer os.Remove(vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_REAUTH", "true")
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("VAULT_REAUTH", "true")
 		defer os.Setenv("VAULT_REAUTH", "")
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
@@ -409,16 +402,14 @@ func TestAuthenticate(t *testing.T) {
 }
 
 func TestRenew(t *testing.T) {
+
 	t.Run("failed to get renewer", func(t *testing.T) {
 		vaultTokenPath, err := ioutil.TempFile("", "vault-token")
 		if err != nil {
 			t.Fatal(err)
 		}
-
 		defer os.Remove(vaultTokenPath.Name())
-
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
 		assert.NoError(t, err)
@@ -434,8 +425,8 @@ func TestRenew(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer os.Remove(vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
-		_ = os.Setenv("VAULT_REAUTH", "false")
+		os.Setenv("VAULT_TOKEN_PATH", vaultTokenPath.Name())
+		os.Setenv("VAULT_REAUTH", "false")
 		defer os.Setenv("VAULT_REAUTH", "")
 		v, err := NewFromEnvironment()
 		assert.NotNil(t, v)
